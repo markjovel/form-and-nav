@@ -1,0 +1,237 @@
+
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>BrightSmile Dental Clinic</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header class="site-header">
+    <div class="container header-inner">
+      <h1 class="logo">BrightSmile Dental Clinic</h1>
+      <nav class="nav" id="mainNav">
+        <a href="#index">Home</a>
+        <a href="services.html">Services</a>
+        <a href="#appointment">Appointment</a>
+        <a href="#records">Records</a>
+        <a href="contact.html">Contact</a>
+      </nav>
+      <button class="nav-toggle" id="navToggle">☰</button>
+    </div>
+  </header>
+
+<section id="home" class="hero">
+  <div class="hero-slider">
+
+    <!-- Slide 1 -->
+    <div class="slide" style="background-image: url('images/clinic1.jpg');">
+      <div class="overlay"></div>
+      <div class="container hero-content">
+        <h2>Welcome to <span class="highlight">BrightSmile</span></h2>
+        <p>Quality dental care for the whole family — modern, gentle, and affordable.</p>
+        <a class="btn btn-primary" href="appointment.html">Book an Appointment</a>
+      </div>
+    </div>
+
+    <!-- Slide 2 -->
+    <div class="slide" style="background-image: url('images/clinic2.jpg');">
+      <div class="overlay"></div>
+      <div class="container hero-content">
+        <h2>Your Smile, Our Priority</h2>
+        <p>Experience world-class dental treatments with advanced technology.</p>
+        <a class="btn btn-primary" href="services.html">View Services</a>
+      </div>
+    </div>
+
+    <!-- Slide 3 -->
+    <div class="slide" style="background-image: url('images/clinic3.jpg');">
+      <div class="overlay"></div>
+      <div class="container hero-content">
+        <h2>Safe & Comfortable</h2>
+        <p>We ensure a clean, relaxing, and family-friendly environment.</p>
+        <a class="btn btn-primary" href="contact.html">Contact Us</a>
+      </div>
+    </div>
+
+  </div>
+
+</section>
+
+
+ <section class="mini-gallery">
+  <div class="container">
+    <h3>Our Clinic</h3>
+    <div class="gallery-grid">
+      <img src="images/gallery1.jpg">
+      <img src="images/gallery2.jpg">
+      <img src="images/gallery3.jpg">
+      <img src="images/gallery4.jpg">
+    </div>
+  </div>
+</section>
+
+
+
+ 
+  <footer class="site-footer">
+    <div class="container">
+      <p>© <span id="year"></span> BrightSmile Dental Clinic — All rights reserved.</p>
+    </div>
+  </footer>
+
+  <template id="rowTemplate">
+    <tr>
+      <td class="idx"></td>
+      <td class="tname"></td>
+      <td class="temail"></td>
+      <td class="tphone"></td>
+      <td class="tdate"></td>
+      <td class="ttime"></td>
+      <td class="tnote"></td>
+      <td class="tactions">
+        <button class="btn tiny edit">Edit</button>
+        <button class="btn tiny danger delete">Delete</button>
+      </td>
+    </tr>
+  </template>
+
+  <script>
+    // Basic interactivity and localStorage appointment management
+    const form = document.getElementById('appointmentForm');
+    const recordsKey = 'brightsmile_appointments_v1';
+    const tbody = document.querySelector('#recordsTable tbody');
+    const template = document.getElementById('rowTemplate');
+    const search = document.getElementById('search');
+    const yearSpan = document.getElementById('year');
+    yearSpan.textContent = new Date().getFullYear();
+
+    function loadRecords() {
+      const raw = localStorage.getItem(recordsKey);
+      return raw ? JSON.parse(raw) : [];
+    }
+    function saveRecords(list) {
+      localStorage.setItem(recordsKey, JSON.stringify(list));
+    }
+
+    function renderRecords(filter = ''){
+      const list = loadRecords();
+      tbody.innerHTML = '';
+      const filtered = list.filter(r => {
+        if(!filter) return true;
+        const s = filter.toLowerCase();
+        return (r.name||'').toLowerCase().includes(s) || (r.email||'').toLowerCase().includes(s);
+      });
+      filtered.forEach((r, i) => {
+        const tr = template.content.cloneNode(true);
+        tr.querySelector('.idx').textContent = i+1;
+        tr.querySelector('.tname').textContent = r.name;
+        tr.querySelector('.temail').textContent = r.email;
+        tr.querySelector('.tphone').textContent = r.phone || '';
+        tr.querySelector('.tdate').textContent = r.date || '';
+        tr.querySelector('.ttime').textContent = r.time || '';
+        tr.querySelector('.tnote').textContent = r.message || '';
+        const editBtn = tr.querySelector('.edit');
+        const deleteBtn = tr.querySelector('.delete');
+        editBtn.addEventListener('click', ()=> editRecord(r.id));
+        deleteBtn.addEventListener('click', ()=> deleteRecord(r.id));
+        tbody.appendChild(tr);
+      });
+    }
+
+    function uid(){ return Date.now().toString(36) + Math.random().toString(36).slice(2,7); }
+
+    form.addEventListener('submit', (e)=>{
+      e.preventDefault();
+      const record = {
+        id: uid(),
+        name: document.getElementById('name').value.trim(),
+        email: document.getElementById('email').value.trim(),
+        phone: document.getElementById('phone').value.trim(),
+        date: document.getElementById('date').value,
+        time: document.getElementById('time').value,
+        message: document.getElementById('message').value.trim()
+      };
+      const list = loadRecords();
+      list.push(record);
+      saveRecords(list);
+      form.reset();
+      renderRecords(search.value);
+      // move to records section
+      location.hash = '#records';
+    });
+
+    document.getElementById('clearBtn').addEventListener('click', ()=> form.reset());
+
+    function editRecord(id){
+      const list = loadRecords();
+      const r = list.find(x=>x.id===id);
+      if(!r) return alert('Record not found');
+      // populate form for editing (simple flow: delete old, user submits new)
+      document.getElementById('name').value = r.name;
+      document.getElementById('email').value = r.email;
+      document.getElementById('phone').value = r.phone;
+      document.getElementById('date').value = r.date;
+      document.getElementById('time').value = r.time;
+      document.getElementById('message').value = r.message;
+      // remove existing record so submit will create updated one
+      const newList = list.filter(x=>x.id!==id);
+      saveRecords(newList);
+      renderRecords(search.value);
+      location.hash = '#appointment';
+    }
+
+    function deleteRecord(id){
+      if(!confirm('Delete this appointment?')) return;
+      const list = loadRecords().filter(x=>x.id!==id);
+      saveRecords(list);
+      renderRecords(search.value);
+    }
+
+    document.getElementById('exportBtn').addEventListener('click', ()=>{
+      const list = loadRecords();
+      if(!list.length) return alert('No records to export');
+      const hdr = ['id','name','email','phone','date','time','message'];
+      const rows = list.map(r => hdr.map(h => '"'+(r[h]??'')+'"').join(','));
+      const csv = [hdr.join(','), ...rows].join('\n');
+      const blob = new Blob([csv], {type: 'text/csv'});
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url; a.download = 'appointments.csv';
+      document.body.appendChild(a); a.click(); a.remove();
+      URL.revokeObjectURL(url);
+    });
+
+    document.getElementById('clearAllBtn').addEventListener('click', ()=>{
+      if(!confirm('Clear ALL appointment records?')) return;
+      localStorage.removeItem(recordsKey);
+      renderRecords();
+    });
+
+    search.addEventListener('input', ()=> renderRecords(search.value));
+
+    // contact form (example: doesn't send anywhere, just demo)
+    document.getElementById('contactForm').addEventListener('submit', (e)=>{
+      e.preventDefault();
+      alert('Message sent. Thank you!');
+      e.target.reset();
+    });
+
+    // nav toggle for small screens
+    document.getElementById('navToggle').addEventListener('click', ()=>{
+      document.getElementById('mainNav').classList.toggle('open');
+    });
+
+    // set focus to search when records hash
+    window.addEventListener('hashchange', ()=>{
+      if(location.hash === '#records') search.focus();
+    });
+
+    // initial render
+    renderRecords();
+  </script>
+
+
+
+
